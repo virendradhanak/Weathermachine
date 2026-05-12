@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Weather Dashboard</title>
+    <style>
+        @import url('https://fonts.cdnfonts.com/css/product-sans');
+
+        :root {
+            /* Light Theme */
+            --bg-base: #f4f4f5;
+            --bg-card: #ffffff;
+            --text-main: #18181b;
+            --text-muted: #71717a;
+            --border: #e4e4e7;
+            --accent: #2563eb;
+            --shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme */
+            --bg-base: #09090b;
+            --bg-card: #18181b;
+            --text-main: #fafafa;
+            --text-muted: #a1a1aa;
+            --border: #27272a;
+            --accent: #60a5fa;
+            --shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Product Sans', sans-serif;
+            transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, fill 0.4s ease;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* Forces exact one page */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5vw;
+        }
+
+        /* --- Dashboard Layout --- */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1.2fr 2fr 1fr;
+            grid-template-rows: 1fr;
+            gap: 1.5vw;
+            width: 100%;
+            max-width: 1600px;
+            height: 100%;
+            max-height: 900px;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Top Controls --- */
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+        select.theme-selector {
+            appearance: none;
+            background: var(--bg-base);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* --- Panel 1: Current Weather --- */
+        .current-panel {
+            padding: 2.5rem;
+            justify-content: space-between;
+        }
+        .city { font-size: 2.5rem; font-weight: 700; line-height: 1.1; }
+        .time { color: var(--text-muted); font-size: 1.1rem; margin-top: 5px; }
+        
+        .huge-vector {
+            width: 100%;
+            height: 200px;
+            margin: 2rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .huge-vector svg { width: 150px; height: 150px; stroke: var(--accent); stroke-width: 1.5; fill: none; }
+
+        .temp-block { display: flex; align-items: flex-start; }
+        .temp { font-size: 6rem; font-weight: 300; line-height: 0.8; letter-spacing: -3px; }
+        .deg { font-size: 2.5rem; }
+        .cond { font-size: 1.5rem; font-weight: 500; margin-top: 10px; color: var(--text-main); }
+        .high-low { font-size: 1.1rem; color: var(--text-muted); font-weight: 500; margin-top: 8px; }
+
+        /* Sun Cycle */
+        .sun-box { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+        .sun-times { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 600; }
+        .sun-svg { width: 100%; height: 50px; margin-top: 10px; }
+
+        /* --- Panel 2: Big Vector Metrics --- */
+        .metrics-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 1px;
+            background: var(--border); /* Creates internal borders */
+        }
+        .metric-card {
+            background: var(--bg-card);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 15px;
+        }
+        
+        /* The Big Vectors */
+        .metric-vector {
+            width: 80px;
+            height: 80px;
+            stroke: var(--accent);
+            stroke-width: 1.5;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .m-value { font-size: 2.5rem; font-weight: 400; line-height: 1; }
+        .m-unit { font-size: 1rem; color: var(--text-muted); }
+        .m-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; color: var(--text-muted); }
+
+        /* --- Panel 3: Forecasts --- */
+        .forecast-panel {
+            display: flex;
+            flex-direction: column;
+        }
+        .f-section {
+            flex: 1;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .f-section:first-child { border-bottom: 1px solid var(--border); }
+        .section-title { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 15px; }
+        
+        .list { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; scrollbar-width: none; padding-right: 5px; }
+        .list::-webkit-scrollbar { display: none; }
+        
+        .list-item { display: flex; align-items: center; justify-content: space-between; font-size: 1.1rem; }
+        .l-time { width: 70px; font-weight: 500; }
+        .l-icon { width: 30px; height: 30px; stroke: var(--text-main); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .l-temp { width: 80px; text-align: right; font-weight: 600; }
+
+        /* Loader */
+        #loader { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-base); display: flex; align-items: center; justify-content: center; z-index: 100; font-size: 2rem; font-weight: 700; }
+
+        /* Responsive Break for tablets/phones */
+        @media (max-width: 1100px) {
+            body { height: auto; overflow: auto; padding: 15px; }
+            .dashboard { grid-template-columns: 1fr; grid-template-rows: auto; height: auto; max-height: none; }
+            .metric-vector { width: 50px; height: 50px; }
+            .m-value { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">Syncing Satellite Data...</div>
+
+    <div class="dashboard">
+        
+        <div class="panel current-panel">
+            <div class="controls">
+                <select class="theme-selector" id="theme-select" onchange="setTheme(this.value)">
+                    <option value="auto">Auto Theme</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+
+            <div>
+                <div class="city" id="city">Locating...</div>
+                <div class="time" id="datetime">--</div>
+            </div>
+
+            <div class="huge-vector" id="main-vector">
+                </div>
+
+            <div>
+                <div class="temp-block">
+                    <div class="temp" id="temp">--</div>
+                    <div class="deg">&deg;</div>
+                </div>
+                <div class="cond" id="condition">--</div>
+                <div class="high-low">H: <span id="temp-high">--</span>&deg; &nbsp;&nbsp; L: <span id="temp-low">--</span>&deg;</div>
+            </div>
+
+            <div class="sun-box">
+                <div class="sun-times">
+                    <div><span style="color:var(--text-muted)">Rise</span> <span id="sunrise">--:--</span></div>
+                    <div><span style="color:var(--text-muted)">Set</span> <span id="sunset">--:--</span></div>
+                </div>
+                <svg class="sun-svg" viewBox="0 0 200 40">
+                    <path d="M 10 35 Q 100 -20 190 35" fill="none" stroke="var(--border)" stroke-width="2" stroke-dasharray="4 4"/>
+                    <circle cx="100" cy="8" r="6" fill="var(--accent)"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="panel metrics-panel">
+            <div class="metric-card">
+                <svg class="metric-vector" viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/><path d="M12 7v5"/></svg>
+                <div>
+                    <div class="m-value"><span id="feels">--</span><span class="m-unit">&deg;C</span></div>
+                    <div class="m-label">Feels Like</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <svg class="metric-vector" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                <div>
+                    <div class="m-value"><span id="hum">--</span><span class="m-unit">%</span></div>
+                    <div class="m-label">Humidity</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <svg class="metric-vector" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <div>
+                    <div class="m-value"><span id="aqi">--</span><span class="m-unit">Idx</span></div>
+                    <div class="m-label">Air Quality</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <svg class="metric-vector" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+                <div>
+                    <div class="m-value"><span id="wind">--</span><span class="m-unit">kph</span></div>
+                    <div class="m-label">Wind Speed</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <svg class="metric-vector" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <div>
+                    <div class="m-value"><span id="vis">--</span><span class="m-unit">km</span></div>
+                    <div class="m-label">Visibility</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <svg class="metric-vector" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                <div>
+                    <div class="m-value"><span id="uv">--</span><span class="m-unit">UVI</span></div>
+                    <div class="m-label">UV Index</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel forecast-panel">
+            <div class="f-section">
+                <div class="section-title">12-Hour Forecast</div>
+                <div class="list" id="list-12h"></div>
+            </div>
+            <div class="f-section">
+                <div class="section-title">7-Day Forecast</div>
+                <div class="list" id="list-7d"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // SVG Icon Library
+        const icons = {
+            clear: '<circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>',
+            cloudy: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+            rain: '<path d="M16 13v8M8 13v8M12 15v8M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/>',
+            snow: '<path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25M8 19l-2 2m4-2-2 2m8-2-2 2"/>',
+            thunder: '<path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><path d="m13 11-4 6h6l-4 6"/>'
+        };
+
+        function getIcon(c) {
+            if (c === 0) return { i: icons.clear, t: 'Clear Sky' };
+            if (c >= 1 && c <= 3) return { i: icons.cloudy, t: 'Cloudy' };
+            if (c >= 51 && c <= 67) return { i: icons.rain, t: 'Rain' };
+            if (c >= 71 && c <= 77) return { i: icons.snow, t: 'Snow' };
+            if (c >= 80 && c <= 82) return { i: icons.rain, t: 'Showers' };
+            if (c >= 95 && c <= 99) return { i: icons.thunder, t: 'Storm' };
+            return { i: icons.cloudy, t: 'Foggy' };
+        }
+
+        function formatTime(iso) {
+            const d = new Date(iso);
+            return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        }
+
+        // Theme and Clock Engine
+        function updateClock() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            document.getElementById('datetime').textContent = `${dateStr} • ${formatTime(now.toISOString())}`;
+            
+            const themeOpt = document.getElementById('theme-select').value;
+            if(themeOpt === 'auto') {
+                const h = now.getHours();
+                document.documentElement.setAttribute('data-theme', (h >= 6 && h < 18) ? 'light' : 'dark');
+            }
+        }
+        function setTheme(val) {
+            if (val === 'auto') updateClock();
+            else document.documentElement.setAttribute('data-theme', val);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Data Engine (Open-Meteo)
+        async function fetchWeather(lat, lon) {
+            try {
+                const wUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code,visibility,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`;
+                const aUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi&timezone=auto`;
+                const gUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`;
+
+                const [wRes, aRes, gRes] = await Promise.all([fetch(wUrl), fetch(aUrl), fetch(gUrl)]);
+                const w = await wRes.json();
+                const a = await aRes.json();
+                const g = await gRes.json();
+
+                // Assign Panel 1
+                document.getElementById('city').textContent = g.address.city || g.address.town || g.address.county || "Location";
+                document.getElementById('temp').textContent = Math.round(w.current.temperature_2m);
+                
+                const cObj = getIcon(w.current.weather_code);
+                document.getElementById('condition').textContent = cObj.t;
+                document.getElementById('main-vector').innerHTML = `<svg viewBox="0 0 24 24">${cObj.i}</svg>`;
+                document.getElementById('temp-high').textContent = Math.round(w.daily.temperature_2m_max[0]);
+                document.getElementById('temp-low').textContent = Math.round(w.daily.temperature_2m_min[0]);
+                document.getElementById('sunrise').textContent = formatTime(w.daily.sunrise[0]);
+                document.getElementById('sunset').textContent = formatTime(w.daily.sunset[0]);
+
+                // Assign Panel 2 (Metrics)
+                document.getElementById('feels').textContent = Math.round(w.current.apparent_temperature);
+                document.getElementById('hum').textContent = w.current.relative_humidity_2m;
+                document.getElementById('aqi').textContent = Math.round(a.current.us_aqi);
+                document.getElementById('wind').textContent = Math.round(w.current.wind_speed_10m);
+
+                const currentH = w.current.time.slice(0, 13) + ":00";
+                const hI = w.hourly.time.findIndex(t => t.startsWith(currentH));
+                document.getElementById('vis').textContent = (w.hourly.visibility[hI] / 1000).toFixed(1);
+                document.getElementById('uv').textContent = Math.round(w.hourly.uv_index[hI]);
+
+                // Assign Panel 3 (Forecasts)
+                const hHTML = [];
+                for (let i = hI + 1; i <= hI + 12; i++) {
+                    hHTML.push(`
+                        <div class="list-item">
+                            <span class="l-time">${formatTime(w.hourly.time[i])}</span>
+                            <svg class="l-icon" viewBox="0 0 24 24">${getIcon(w.hourly.weather_code[i]).i}</svg>
+                            <span class="l-temp">${Math.round(w.hourly.temperature_2m[i])}&deg;</span>
+                        </div>
+                    `);
+                }
+                document.getElementById('list-12h').innerHTML = hHTML.join('');
+
+                const dHTML = [];
+                for (let i = 0; i < 7; i++) {
+                    const day = i === 0 ? 'Today' : new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(new Date(w.daily.time[i]));
+                    dHTML.push(`
+                        <div class="list-item">
+                            <span class="l-time">${day}</span>
+                            <svg class="l-icon" viewBox="0 0 24 24">${getIcon(w.daily.weather_code[i]).i}</svg>
+                            <span class="l-temp" style="color:var(--text-muted); font-weight:400; font-size:0.9rem">${Math.round(w.daily.temperature_2m_min[i])}&deg; <span style="color:var(--text-main); font-weight:600; font-size:1.1rem; margin-left:5px">${Math.round(w.daily.temperature_2m_max[i])}&deg;</span></span>
+                        </div>
+                    `);
+                }
+                document.getElementById('list-7d').innerHTML = dHTML.join('');
+
+                document.getElementById('loader').style.display = 'none';
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loader').innerHTML = "Network Error";
+            }
+        }
+
+        // Initialize
+        fetchWeather(18.8286, 74.3743).then(() => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude),
+                    (err) => console.log("Geo blocked, keeping default location.")
+                );
+            }
+        });
+    </script>
+</body>
+</html>
